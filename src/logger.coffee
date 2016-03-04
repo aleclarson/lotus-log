@@ -2,8 +2,9 @@
 { Void, Nan, isType, getType, setType
   isKind, testKind, getKind, setKind, assertKind } = require "type-utils"
 
+{ throwFailure } = require "failure"
+
 NamedFunction = require "named-function"
-reportFailure = require "report-failure"
 repeatString = require "repeat-string"
 childProcess = require "child_process"
 EventEmitter = require "eventemitter3"
@@ -550,7 +551,7 @@ define Logger.prototype, ->
       try value = obj[key]
       catch error
         @red error.message
-        try reportFailure error, { obj, key }
+        try throwFailure error, { obj, key }
         return
 
       return if @_logValue value, opts
