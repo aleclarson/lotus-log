@@ -4,56 +4,58 @@ hooker = require "hooker"
 repeatString = require "repeat-string"
 
 # Can be safely called with any Logger.
-module.exports = define.mixin (context, log, opts) ->
+module.exports = (log) ->
 
   hooker.hook log, "_printChunk", (chunk) ->
     return if @line.length > 0 or chunk.message.length is 0 or chunk.message is @ln
     chunk.message = @_indent + chunk.message
     chunk.length += @_indent.length
 
-  @options = configurable: no
-  @ log,
+  define log, ->
 
-    indent:
-      value: 0
-      didSet: (newValue, oldValue) ->
-        @_indent = repeatString @indentString, newValue
+    @options = configurable: no
+    @ log,
 
-    indentString:
-      assign: " "
-      didSet: (newValue) ->
-        @_indent = repeatString newValue, @indent
-        @_indentLength = newValue.length
+      indent:
+        value: 0
+        didSet: (newValue, oldValue) ->
+          @_indent = repeatString @indentString, newValue
 
-  @writable = no
-  @ log,
+      indentString:
+        assign: " "
+        didSet: (newValue) ->
+          @_indent = repeatString newValue, @indent
+          @_indentLength = newValue.length
 
-    plusIndent: (indent) ->
-      @pushIndent indent + @indent
+    @writable = no
+    @ log,
 
-    pushIndent: (indent) ->
-      @_indentStack.push @indent
-      @indent = indent
-      return
+      plusIndent: (indent) ->
+        @pushIndent indent + @indent
 
-    popIndent: (n = 1) ->
-      while n-- > 0
-        indent = @_indentStack.pop()
-        if indent?
-          @indent = indent
-        else
-          @indent = 0
-          break
-      return
+      pushIndent: (indent) ->
+        @_indentStack.push @indent
+        @indent = indent
+        return
 
-    withIndent: (indent, fn) ->
-      @pushIndent indent
-      fn()
-      @popIndent()
-      return
+      popIndent: (n = 1) ->
+        while n-- > 0
+          indent = @_indentStack.pop()
+          if indent?
+            @indent = indent
+          else
+            @indent = 0
+            break
+        return
 
-  @options = enumerable: no
-  @ log,
-    _indent: ""
-    _indentLength: 0
-    _indentStack: []
+      withIndent: (indent, fn) ->
+        @pushIndent indent
+        fn()
+        @popIndent()
+        return
+
+    @options = enumerable: no
+    @ log,
+      _indent: ""
+      _indentLength: 0
+      _indentStack: []
