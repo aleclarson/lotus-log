@@ -1,8 +1,10 @@
 
 require "lotus-require"
+
 { isKind } = require "type-utils"
+
+isNodeJS = require "isNodeJS"
 define = require "define"
-isNodeEnv = require "is-node-env"
 
 Logger = require "./logger"
 Line = require "./line"
@@ -13,7 +15,7 @@ getLogOptions = ->
       require "./stack"
       require "./cursor"
     ]
-  if isNodeEnv
+  if isNodeJS
     opts.process = process
   else
     opts.print = (message) ->
@@ -27,7 +29,7 @@ log.error = log.error.bind log
 # log.error.isQuiet = no
 # log.error.isPretty = yes
 
-window.log = log unless isNodeEnv
+window.log = log unless isNodeJS
 
 # Replace bare-bones logger with the lotus-log.
 require("temp-log")._ = log
@@ -43,7 +45,7 @@ require("temp-log")._ = log
 #     log.onError error
 #     inUncaughtException = no
 #
-#   if isNodeEnv
+#   if isNodeJS
 #     process.on "uncaughtException", handleError
 #   else
 #     window.onerror = handleError
@@ -65,7 +67,7 @@ define ->
     Logger: Logger
 
   # @writable = yes
-  # 
+  #
   # @ log,
   #
   #   onExit: (code) ->

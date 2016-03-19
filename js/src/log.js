@@ -1,12 +1,12 @@
-var Line, Logger, define, getLogOptions, isKind, isNodeEnv, log;
+var Line, Logger, define, getLogOptions, isKind, isNodeJS, log;
 
 require("lotus-require");
 
 isKind = require("type-utils").isKind;
 
-define = require("define");
+isNodeJS = require("isNodeJS");
 
-isNodeEnv = require("is-node-env");
+define = require("define");
 
 Logger = require("./logger");
 
@@ -17,7 +17,7 @@ getLogOptions = function() {
   opts = {
     mixins: [require("./stack"), require("./cursor")]
   };
-  if (isNodeEnv) {
+  if (isNodeJS) {
     opts.process = process;
   } else {
     opts.print = function(message) {
@@ -31,7 +31,7 @@ log = module.exports = Logger(getLogOptions());
 
 log.error = log.error.bind(log);
 
-if (!isNodeEnv) {
+if (!isNodeJS) {
   window.log = log;
 }
 

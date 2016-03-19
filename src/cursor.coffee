@@ -108,10 +108,7 @@ module.exports = (log) ->
         _right: (n = 1) -> log.ansi "#{n}C"
 
   hooker.hook log, "_printChunk", post: (result, chunk) ->
-    if chunk.message is @ln
-      @cursor._x = 0
-    else
-      throw TypeError "'chunk.length' must be a Number" unless typeof chunk.length is "number"
-      @cursor._x += chunk.length
+    if chunk.message is @ln then @cursor._x = 0
+    else @cursor._x += chunk.length
 
   null

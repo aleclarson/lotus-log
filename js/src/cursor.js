@@ -173,9 +173,6 @@ module.exports = function(log) {
       if (chunk.message === this.ln) {
         return this.cursor._x = 0;
       } else {
-        if (typeof chunk.length !== "number") {
-          throw TypeError("'chunk.length' must be a Number");
-        }
         return this.cursor._x += chunk.length;
       }
     }

@@ -1,18 +1,25 @@
-var define, hooker, repeatString;
+var assertType, define, hooker, repeatString;
 
-define = require("define");
-
-hooker = require("hooker");
+assertType = require("type-utils").assertType;
 
 repeatString = require("repeat-string");
 
+hooker = require("hooker");
+
+define = require("define");
+
 module.exports = function(log) {
   hooker.hook(log, "_printChunk", function(chunk) {
-    if (this.line.length > 0 || chunk.message.length === 0 || chunk.message === this.ln) {
+    if (this.line.length > 0) {
       return;
     }
-    chunk.message = this._indent + chunk.message;
-    return chunk.length += this._indent.length;
+    if (chunk.indent === true) {
+      chunk.message = this._indent;
+      return chunk.length = this._indent.length;
+    } else if (!((chunk.length === 0) || (chunk.message === this.ln))) {
+      chunk.message = this._indent + chunk.message;
+      return chunk.length += this._indent.length;
+    }
   });
   return define(log, function() {
     this.options = {
@@ -28,8 +35,8 @@ module.exports = function(log) {
       indentString: {
         assign: " ",
         didSet: function(newValue) {
-          this._indent = repeatString(newValue, this.indent);
-          return this._indentLength = newValue.length;
+          assertType(newValue, String);
+          return this._indent = repeatString(newValue, this.indent);
         }
       }
     });
@@ -68,7 +75,6 @@ module.exports = function(log) {
     };
     return this(log, {
       _indent: "",
-      _indentLength: 0,
       _indentStack: []
     });
   });

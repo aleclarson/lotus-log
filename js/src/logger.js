@@ -1,9 +1,11 @@
-var EventEmitter, KeyMirror, Line, Logger, NamedFunction, Nan, OS, Void, assertKind, childProcess, define, getKind, getType, inArray, isKind, isNodeEnv, isType, ref, repeatString, setKind, setType, stripAnsi, sync, testKind, throwFailure,
+var EventEmitter, KeyMirror, Line, Logger, NamedFunction, Nan, Null, OS, Void, assertKind, assertType, childProcess, define, getKind, getType, has, inArray, isKind, isNodeJS, isType, ref, repeatString, setKind, setType, stripAnsi, sync, testKind, throwFailure,
   slice = [].slice;
 
-ref = require("type-utils"), Void = ref.Void, Nan = ref.Nan, isType = ref.isType, getType = ref.getType, setType = ref.setType, isKind = ref.isKind, testKind = ref.testKind, getKind = ref.getKind, setKind = ref.setKind, assertKind = ref.assertKind;
+ref = require("type-utils"), isType = ref.isType, getType = ref.getType, setType = ref.setType, isKind = ref.isKind, testKind = ref.testKind, getKind = ref.getKind, setKind = ref.setKind, assertType = ref.assertType, assertKind = ref.assertKind, Void = ref.Void, Null = ref.Null, Nan = ref.Nan;
 
 throwFailure = require("failure").throwFailure;
+
+sync = require("io").sync;
 
 NamedFunction = require("named-function");
 
@@ -13,17 +15,17 @@ childProcess = require("child_process");
 
 EventEmitter = require("eventemitter3");
 
-isNodeEnv = require("is-node-env");
-
 stripAnsi = require("strip-ansi");
 
 KeyMirror = require("keymirror");
 
-sync = require("io").sync;
+isNodeJS = require("isNodeJS");
 
 inArray = require("in-array");
 
 define = require("define");
+
+has = require("has");
 
 OS = require("os");
 
@@ -91,7 +93,7 @@ Logger = module.exports = NamedFunction("Logger", function(options) {
 
 setKind(Logger, Function);
 
-if (!isNodeEnv) {
+if (!isNodeJS) {
   window._logArgs = [];
   window._contents = [];
 }
@@ -115,7 +117,7 @@ define(Logger.prototype, function() {
           label: opts
         };
       }
-      assertKind(opts, Object, "opts");
+      assertType(opts, Object);
       this.moat(0);
       if (opts.label != null) {
         this.log(opts.label);
@@ -158,15 +160,13 @@ define(Logger.prototype, function() {
       return this;
     },
     ansi: function(code) {
-      if (isNodeEnv) {
+      if (isNodeJS) {
         return this._print("\x1b[" + code);
       }
     },
     moat: function(width) {
       var _width, ref1;
-      if (!isType(width, Number)) {
-        throw TypeError("'width' must be a Number");
-      }
+      assertType(width, Number);
       _width = this._computeMoatFrom(this._line);
       if (this.isDebug) {
         if ((ref1 = this._moats) != null) {
@@ -194,7 +194,7 @@ define(Logger.prototype, function() {
       if (this.error.isQuiet) {
         return false;
       }
-      if (!isNodeEnv) {
+      if (!isNodeJS) {
         if (console.reportErrorsAsExceptions === true) {
           if (typeof console.reportException === "function") {
             console.reportException(error);
@@ -222,13 +222,8 @@ define(Logger.prototype, function() {
         }
         return this;
       }
-      if (isType(error.help, String)) {
-        error.help = (function() {
-          return this;
-        }).bind(error.help);
-      }
       if (!isKind(error, Error)) {
-        if (!arguments.hasOwnProperty(1) && isType(error, Object)) {
+        if (!has(arguments, 1) && isType(error, Object)) {
           format = error;
           error = Error("No error message provided.");
         } else {
@@ -273,7 +268,7 @@ define(Logger.prototype, function() {
       }
     },
     clear: function() {
-      if (!isNodeEnv) {
+      if (!isNodeJS) {
         return;
       }
       if (this.process != null) {
@@ -288,7 +283,7 @@ define(Logger.prototype, function() {
       return this;
     },
     clearLine: function(line) {
-      var isCurrentLine;
+      var isCurrentLine, message;
       line = this.lines[line || this._line];
       if (line == null) {
         throw Error("Missing line: " + line);
@@ -304,9 +299,10 @@ define(Logger.prototype, function() {
             y: line.index
           });
         }
-        this._printChunk({
+        message = repeatString(" ", line.length);
+        this._printToChunk(message, {
           line: line.index,
-          message: repeatString(" ", line.length)
+          hidden: true
         });
         if (isCurrentLine) {
           this.cursor.x = 0;
@@ -335,7 +331,7 @@ define(Logger.prototype, function() {
     maxArrayKeys: 10,
     maxStringLength: 60,
     keyOffset: 0,
-    showInherited: true
+    showInherited: false
   });
   this(Logger.prototype.error, {
     isPretty: false,
@@ -349,7 +345,7 @@ define(Logger.prototype, function() {
         return false;
       }
       args = this._concatArgs(args);
-      if (!isNodeEnv) {
+      if (!isNodeJS) {
         window._logArgs.push(args);
       }
       lines = args.split(this.ln);
@@ -396,14 +392,14 @@ define(Logger.prototype, function() {
     },
     _printChunk: function(chunk) {
       var ref1;
-      if (!isKind(chunk, Object)) {
-        throw TypeError("'chunk' must be an Object");
-      }
+      assertType(chunk, Object);
+      assertType(chunk.message, String);
+      assertType(chunk.length, Number);
       if (chunk.length === 0) {
         return false;
       }
       if (chunk.silent !== true) {
-        if (isNodeEnv) {
+        if (isNodeJS) {
           this._print(chunk.message);
         }
         this.emit("chunk", chunk);
@@ -430,7 +426,7 @@ define(Logger.prototype, function() {
         }
       }
       if (this._line === this.lines.length - 1) {
-        if (!isNodeEnv) {
+        if (!isNodeJS) {
           window._contents.push(this.line.contents);
           this._print(this.line.contents);
         }
@@ -440,7 +436,7 @@ define(Logger.prototype, function() {
         line = Line(this.lines.length);
         this.lines.push(line);
         return this._line = line.index;
-      } else if (!isNodeEnv) {
+      } else if (!isNodeJS) {
         throw Error("Changing a Logger's `_line` property is unsupported outside of NodeJS.");
       } else {
         return this._printToChunk(this.ln, {
@@ -468,14 +464,8 @@ define(Logger.prototype, function() {
       return result;
     },
     _logValue: function(value, options) {
-      var error, i, isTruncated, line, ref1, valueType;
-      try {
-        valueType = getType(value);
-      } catch (_error) {
-        error = _error;
-        this.red("" + value);
-        return true;
-      }
+      var i, isTruncated, line, ref1, valueType;
+      valueType = getType(value);
       if (valueType === String) {
         value = stripAnsi(value);
         isTruncated = (options.depth != null) && value.length > options.maxStringLength;
@@ -495,10 +485,12 @@ define(Logger.prototype, function() {
           this.cyan("...");
         }
         this.green("\"");
-      } else if (valueType === Void) {
+      } else if (valueType === Void || valueType === Null) {
         this.yellow.dim("" + value);
       } else if (valueType === Boolean || valueType === Number) {
         this.yellow("" + value);
+      } else if (valueType === Nan) {
+        this.red("NaN");
       } else if (value === Object.empty) {
         this.green.dim("{}");
       } else if (value === Object.prototype) {
@@ -517,7 +509,7 @@ define(Logger.prototype, function() {
         this.green.dim("{ ");
         this.yellow("/" + value.source + "/");
         this.green.dim(" }");
-      } else if (isNodeEnv && valueType === Buffer) {
+      } else if (isNodeJS && valueType === Buffer) {
         this.green.dim.bold("Buffer ");
         this.green.dim("{ ");
         this("length");
@@ -530,28 +522,37 @@ define(Logger.prototype, function() {
       return true;
     },
     _isLoggableObject: function(obj) {
-      return !obj.constructor || !obj.__proto__ || isKind(obj, Object);
+      if (!obj) {
+        return false;
+      }
+      if (!obj.constructor) {
+        return true;
+      }
+      if (!obj.__proto__) {
+        return true;
+      }
+      return isKind(obj, Object);
     },
     _logObject: function(obj, opts, collapse) {
       var objType, regex;
       if (collapse == null) {
         collapse = false;
       }
-      if (!isKind(opts, Object)) {
-        throw TypeError("'opts' must be an Object");
-      }
+      assertKind(opts, Object);
       objType = getType(obj);
       if (!this._isLoggableObject(obj)) {
         this.red("Failed to log.");
         return false;
       }
       if (objType != null) {
-        if (objType.prototype === obj) {
-          this.green.dim.bold(objType.name, ".prototype ");
+        if (obj === objType.prototype) {
+          if (objType.name) {
+            this.green.dim.bold(objType.name + ".prototype ");
+          }
         } else if (objType === Function) {
-          regex = /^function[^\(]*\(([^\)]*)\)/;
+          regex = /^function\s*([^\(]*)\(([^\)]*)\)/;
           regex.results = regex.exec(obj.toString());
-          this.green.dim("function (", regex.results[1], ") ");
+          this.green.dim("function " + regex.results[1] + "(" + regex.results[2] + ") ");
         } else {
           this.green.dim.bold(objType.name, " ");
         }
@@ -570,22 +571,24 @@ define(Logger.prototype, function() {
       return true;
     },
     _logObjectKeys: function(obj, opts) {
-      var inheritedKeys, isTruncated, j, key, keyPath, keys, len, maxKeyCount, ref1, showInherited;
-      if (!isKind(opts, Object)) {
-        throw TypeError("'opts' must be an Object");
-      }
+      var hasInheritedValues, inherited, isRoot, isTruncated, j, key, keys, len, maxKeyCount, ref1;
+      assertKind(opts, Object);
       if (!this._isLoggableObject(obj)) {
         this.red("Failed to log.");
         return false;
       }
-      keyPath = opts.keyPath;
-      keys = KeyMirror(opts.showHidden ? Object.getOwnPropertyNames(obj) : Object.keys(obj));
-      inheritedKeys = this._getInheritedKeys(obj, opts);
-      if (isKind(obj, Function)) {
-        if (obj.name.length > 0) {
-          keys._add("name");
-        }
-      } else if (isKind(obj, Array)) {
+      isRoot = opts.keyPath === "";
+      if (isRoot && opts.showHidden) {
+        keys = KeyMirror(Object.getOwnPropertyNames(obj));
+        keys._remove("prototype", "constructor");
+      } else {
+        keys = KeyMirror(Object.keys(obj));
+      }
+      if (isRoot && opts.showInherited) {
+        inherited = this._getInheritedValues(obj);
+      }
+      hasInheritedValues = inherited && inherited.count;
+      if (isKind(obj, Array)) {
         keys._add("length");
       } else if (isKind(obj, Error)) {
         keys._add("code", "message");
@@ -593,8 +596,10 @@ define(Logger.prototype, function() {
       if (isKind(opts.includedKeys, Array)) {
         keys._add(opts.includedKeys);
       }
-      if (keys._length === 0 && inheritedKeys.length === 0) {
-        return false;
+      if (keys._length === 0) {
+        if (!hasInheritedValues) {
+          return false;
+        }
       }
       isTruncated = false;
       maxKeyCount = opts[isKind(obj, Array) ? "maxArrayKeys" : "maxObjectKeys"];
@@ -602,7 +607,7 @@ define(Logger.prototype, function() {
         isTruncated = true;
         keys._replace(keys._keys.slice(opts.keyOffset, opts.keyOffset + maxKeyCount));
       }
-      this.indent += 2;
+      this.plusIndent(2);
       if (isTruncated && opts.keyOffset > 0) {
         this.moat(0);
         this.cyan("...");
@@ -616,18 +621,12 @@ define(Logger.prototype, function() {
         this.moat(0);
         this.cyan("...");
       }
-      if (inheritedKeys.length > 0) {
+      if (hasInheritedValues) {
         this.moat(0);
-        this.green.dim.bold("inherited ");
-        showInherited = opts.showInherited;
-        opts.showInherited = false;
-        opts.depth++;
-        this._logObject(inheritedKeys.hash, opts);
-        opts.depth--;
-        opts.showInherited = showInherited;
+        this._logInheritedValues(inherited.values, opts);
       }
       this.moat(0);
-      this.indent -= 2;
+      this.popIndent();
       return true;
     },
     _logObjectKey: function(obj, key, opts) {
@@ -671,31 +670,60 @@ define(Logger.prototype, function() {
       opts.depth--;
       return opts.keyPath = keyPath;
     },
-    _getInheritedKeys: function(obj, opts) {
-      var inheritedKeys, key, objProto, objType, value;
-      inheritedKeys = [];
-      inheritedKeys.hash = {};
+    _getInheritedValues: function(obj) {
+      var count, j, key, len, objProto, objType, ref1, values;
+      if (!obj) {
+        return;
+      }
       objType = getType(obj);
-      objProto = objType != null ? objType.prototype : void 0;
-      if (opts.showInherited && opts.keyPath === "" && objProto !== obj) {
-        while (true) {
-          if (objProto != null) {
-            for (key in objProto) {
-              value = objProto[key];
-              inheritedKeys.push = {
-                key: key,
-                value: value
-              };
-              inheritedKeys.hash[key] = value;
+      if (!objType) {
+        return;
+      }
+      count = 0;
+      values = Object.create(null);
+      while (true) {
+        objProto = objType.prototype;
+        if (objProto != null) {
+          ref1 = Object.getOwnPropertyNames(objProto);
+          for (j = 0, len = ref1.length; j < len; j++) {
+            key = ref1[j];
+            if (key === "constructor") {
+              continue;
             }
-          }
-          objType = getKind(objType);
-          if (objType == null) {
-            break;
+            if (key === "__proto__") {
+              continue;
+            }
+            if (has(values, key)) {
+              continue;
+            }
+            if (has(obj, key)) {
+              continue;
+            }
+            values[key] = objProto[key];
+            count += 1;
           }
         }
+        objType = getKind(objType);
+        if (!objType) {
+          break;
+        }
       }
-      return inheritedKeys;
+      return {
+        count: count,
+        values: values
+      };
+    },
+    _logInheritedValues: function(values, opts) {
+      var keyOffset, showInherited;
+      this.green.dim.bold("inherited ");
+      showInherited = opts.showInherited, keyOffset = opts.keyOffset;
+      opts.showInherited = false;
+      opts.keyOffset = 0;
+      opts.depth++;
+      this._logObject(values, opts);
+      opts.depth--;
+      opts.keyOffset = keyOffset;
+      return opts.showInherited = showInherited;
     },
     _debugError: function(error, format) {
       if (format.simple === true) {

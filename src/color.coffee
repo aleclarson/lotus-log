@@ -2,11 +2,12 @@
 # TODO: Allow simultaneous use of foreground & background color.
 
 { setType, setKind } = require "type-utils"
+{ sync } = require "io"
+
 NamedFunction = require "named-function"
 capitalize = require "capitalize"
-isNodeEnv = require "is-node-env"
 stripAnsi = require "strip-ansi"
-{ sync } = require "io"
+isNodeJS = require "isNodeJS"
 define = require "define"
 hooker = require "hooker"
 ansi = require "ansi-256-colors"
@@ -19,9 +20,9 @@ module.exports = (log, opts) ->
   colors = Object.keys palettes.bright
 
   hooker.hook log, "_printChunk", (chunk) ->
-    message = stripAnsi chunk.message
-    chunk.message = message unless @isColorful
-    chunk.length = message.length
+    return if @isColorful
+    return unless chunk.message?
+    chunk.message = stripAnsi chunk.message
 
   define log, ->
     @options = {}
@@ -76,7 +77,7 @@ Style = NamedFunction "Style", ({ log, finalize, colors }) ->
 
   style = (messages...) ->
 
-    return finalize messages if !isNodeEnv or log.isQuiet or !log.isColorful
+    return finalize messages if !isNodeJS or log.isQuiet or !log.isColorful
 
     palette = style.palette ? if style.isDim then "dim" else "bright"
 

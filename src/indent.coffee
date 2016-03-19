@@ -1,15 +1,21 @@
 
-define = require "define"
-hooker = require "hooker"
+{ assertType } = require "type-utils"
+
 repeatString = require "repeat-string"
+hooker = require "hooker"
+define = require "define"
 
 # Can be safely called with any Logger.
 module.exports = (log) ->
 
   hooker.hook log, "_printChunk", (chunk) ->
-    return if @line.length > 0 or chunk.message.length is 0 or chunk.message is @ln
-    chunk.message = @_indent + chunk.message
-    chunk.length += @_indent.length
+    return if @line.length > 0
+    if chunk.indent is yes
+      chunk.message = @_indent
+      chunk.length = @_indent.length
+    else unless (chunk.length is 0) or (chunk.message is @ln)
+      chunk.message = @_indent + chunk.message
+      chunk.length += @_indent.length
 
   define log, ->
 
@@ -24,8 +30,8 @@ module.exports = (log) ->
       indentString:
         assign: " "
         didSet: (newValue) ->
+          assertType newValue, String
           @_indent = repeatString newValue, @indent
-          @_indentLength = newValue.length
 
     @writable = no
     @ log,
@@ -57,5 +63,4 @@ module.exports = (log) ->
     @options = enumerable: no
     @ log,
       _indent: ""
-      _indentLength: 0
       _indentStack: []

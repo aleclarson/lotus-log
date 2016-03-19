@@ -1,17 +1,17 @@
-var NamedFunction, Style, ansi, capitalize, defaultPalettes, define, defineStyleAttributes, hooker, isNodeEnv, ref, setKind, setType, stripAnsi, sync,
+var NamedFunction, Style, ansi, capitalize, defaultPalettes, define, defineStyleAttributes, hooker, isNodeJS, ref, setKind, setType, stripAnsi, sync,
   slice = [].slice;
 
 ref = require("type-utils"), setType = ref.setType, setKind = ref.setKind;
+
+sync = require("io").sync;
 
 NamedFunction = require("named-function");
 
 capitalize = require("capitalize");
 
-isNodeEnv = require("is-node-env");
-
 stripAnsi = require("strip-ansi");
 
-sync = require("io").sync;
+isNodeJS = require("isNodeJS");
 
 define = require("define");
 
@@ -29,12 +29,13 @@ module.exports = function(log, opts) {
   }
   colors = Object.keys(palettes.bright);
   hooker.hook(log, "_printChunk", function(chunk) {
-    var message;
-    message = stripAnsi(chunk.message);
-    if (!this.isColorful) {
-      chunk.message = message;
+    if (this.isColorful) {
+      return;
     }
-    return chunk.length = message.length;
+    if (chunk.message == null) {
+      return;
+    }
+    return chunk.message = stripAnsi(chunk.message);
   });
   define(log, function() {
     this.options = {};
@@ -114,7 +115,7 @@ Style = NamedFunction("Style", function(arg) {
   style = function() {
     var messages, palette, ref1;
     messages = 1 <= arguments.length ? slice.call(arguments, 0) : [];
-    if (!isNodeEnv || log.isQuiet || !log.isColorful) {
+    if (!isNodeJS || log.isQuiet || !log.isColorful) {
       return finalize(messages);
     }
     palette = (ref1 = style.palette) != null ? ref1 : style.isDim ? "dim" : "bright";

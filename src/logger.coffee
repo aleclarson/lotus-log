@@ -1,19 +1,20 @@
 
-{ Void, Nan, isType, getType, setType
-  isKind, testKind, getKind, setKind, assertKind } = require "type-utils"
+{ isType, getType, setType, isKind, testKind, getKind
+  setKind, assertType, assertKind, Void, Null, Nan } = require "type-utils"
 
 { throwFailure } = require "failure"
+{ sync } = require "io"
 
 NamedFunction = require "named-function"
 repeatString = require "repeat-string"
 childProcess = require "child_process"
 EventEmitter = require "eventemitter3"
-isNodeEnv = require "is-node-env"
 stripAnsi = require "strip-ansi"
 KeyMirror = require "keymirror"
-{ sync } = require "io"
+isNodeJS = require "isNodeJS"
 inArray = require "in-array"
 define = require "define"
+has = require "has"
 OS = require "os"
 
 Line = require "./line"
@@ -73,7 +74,7 @@ Logger = module.exports = NamedFunction "Logger", (options) ->
 
 setKind Logger, Function
 
-if !isNodeEnv
+unless isNodeJS
   window._logArgs = []
   window._contents = []
 
@@ -88,7 +89,7 @@ define Logger.prototype, ->
 
     format: (value, opts = {}) ->
       opts = label: opts if isType opts, String
-      assertKind opts, Object, "opts"
+      assertType opts, Object
       @moat 0
       @log opts.label if opts.label?
       if opts.unlimited
@@ -114,12 +115,11 @@ define Logger.prototype, ->
       @
 
     ansi: (code) ->
-      @_print "\x1b[#{code}" if isNodeEnv
+      @_print "\x1b[#{code}" if isNodeJS
 
     moat: (width) ->
 
-      unless isType width, Number
-        throw TypeError "'width' must be a Number"
+      assertType width, Number
 
       # Calculate the required newlines to match the specified moat width.
       _width = @_computeMoatFrom @_line
@@ -144,7 +144,7 @@ define Logger.prototype, ->
       if @error.isQuiet
         return no
 
-      if not isNodeEnv
+      unless isNodeJS
         # This method only exists in a React Native environment.
         console.reportException? error if console.reportErrorsAsExceptions is yes
         return
@@ -162,11 +162,11 @@ define Logger.prototype, ->
         return this
 
       # TODO: Print the help...
-      if isType error.help, String
-        error.help = (-> @).bind(error.help)
+      # if isType error.help, String
+      #   error.help = (-> @).bind(error.help)
 
       if !isKind error, Error
-        if !arguments.hasOwnProperty(1) and isType error, Object
+        if !has(arguments, 1) and isType error, Object
           format = error
           error = Error "No error message provided."
         else
@@ -206,7 +206,7 @@ define Logger.prototype, ->
       @process.stdout.getWindowSize() if @process? and @process.stdout.isTTY
 
     clear: ->
-      return if !isNodeEnv
+      return unless isNodeJS
       if @process?
         @cursor._x = @cursor._y = 0
         @_print childProcess.execSync "printf '\\33c\\e[3J'", encoding: "utf8"
@@ -233,9 +233,8 @@ define Logger.prototype, ->
           @cursor.save()
           @cursor.move x: 0, y: line.index
 
-        @_printChunk
-          line: line.index
-          message: repeatString " ", line.length
+        message = repeatString " ", line.length
+        @_printToChunk message, { line: line.index, hidden: yes }
 
         if isCurrentLine
           @cursor.x = 0
@@ -269,7 +268,7 @@ define Logger.prototype, ->
 
     keyOffset: 0
 
-    showInherited: yes
+    showInherited: no
 
   @ Logger::error,
 
@@ -283,7 +282,7 @@ define Logger.prototype, ->
     _log: (args) ->
       return no if @isQuiet
       args = @_concatArgs args
-      window._logArgs.push args if !isNodeEnv
+      window._logArgs.push args unless isNodeJS
       lines = args.split @ln
       return no if lines.length is 0
       lastLine = lines.pop()
@@ -313,15 +312,16 @@ define Logger.prototype, ->
 
     _printChunk: (chunk) ->
 
-      unless isKind chunk, Object
-        throw TypeError "'chunk' must be an Object"
+      assertType chunk, Object
+      assertType chunk.message, String
+      assertType chunk.length, Number
 
       return no if chunk.length is 0
 
       if chunk.silent isnt yes
 
         # Outside of NodeJS, messages are buffered because `console.log` must be used.
-        @_print chunk.message if isNodeEnv
+        @_print chunk.message if isNodeJS
 
         @emit "chunk", chunk
 
@@ -344,7 +344,7 @@ define Logger.prototype, ->
       if @_line is @lines.length - 1
 
         # Outside of NodeJS, messages are buffered because `console.log` must be used.
-        if !isNodeEnv
+        unless isNodeJS
           window._contents.push @line.contents
           @_print @line.contents
 
@@ -354,7 +354,7 @@ define Logger.prototype, ->
         @lines.push line
         @_line = line.index
 
-      else if !isNodeEnv
+      else unless isNodeJS
         throw Error "Changing a Logger's `_line` property is unsupported outside of NodeJS."
 
       # Since line splicing is not yet supported, just move the cursor down and overwrite existing lines.
@@ -377,11 +377,7 @@ define Logger.prototype, ->
 
     _logValue: (value, options) ->
 
-      try valueType = getType value
-
-      catch error
-        @red "" + value
-        return yes
+      valueType = getType value
 
       if valueType is String
         value = stripAnsi value
@@ -394,11 +390,14 @@ define Logger.prototype, ->
         @cyan "..." if isTruncated
         @green "\""
 
-      else if valueType is Void
+      else if valueType is Void or valueType is Null
         @yellow.dim "#{value}"
 
       else if valueType is Boolean or valueType is Number
         @yellow "#{value}"
+
+      else if valueType is Nan
+        @red "NaN"
 
       else if value is Object.empty
         @green.dim "{}"
@@ -423,7 +422,7 @@ define Logger.prototype, ->
         @yellow "/#{value.source}/"
         @green.dim " }"
 
-      else if isNodeEnv and valueType is Buffer
+      else if isNodeJS and valueType is Buffer
         @green.dim.bold "Buffer "
         @green.dim "{ "
         @ "length"
@@ -437,12 +436,14 @@ define Logger.prototype, ->
       yes
 
     _isLoggableObject: (obj) ->
-      !obj.constructor or !obj.__proto__ or isKind obj, Object
+      return no unless obj
+      return yes unless obj.constructor
+      return yes unless obj.__proto__
+      return isKind obj, Object
 
     _logObject: (obj, opts, collapse = no) ->
 
-      unless isKind opts, Object
-        throw TypeError "'opts' must be an Object"
+      assertKind opts, Object
 
       objType = getType obj
 
@@ -451,12 +452,12 @@ define Logger.prototype, ->
         return no
 
       if objType?
-        if objType.prototype is obj
-          @green.dim.bold objType.name, ".prototype "
+        if obj is objType.prototype
+          @green.dim.bold objType.name + ".prototype " if objType.name
         else if objType is Function
-          regex = /^function[^\(]*\(([^\)]*)\)/
+          regex = /^function\s*([^\(]*)\(([^\)]*)\)/
           regex.results = regex.exec obj.toString()
-          @green.dim "function (", regex.results[1], ") "
+          @green.dim "function " + regex.results[1] + "(" + regex.results[2] + ") "
         else
           @green.dim.bold objType.name, " "
 
@@ -475,26 +476,25 @@ define Logger.prototype, ->
 
     _logObjectKeys: (obj, opts) ->
 
-      unless isKind opts, Object
-        throw TypeError "'opts' must be an Object"
+      assertKind opts, Object
 
       unless @_isLoggableObject obj
         @red "Failed to log."
         return no
 
-      { keyPath } = opts # Need this for later.
+      isRoot = opts.keyPath is ""
 
-      keys = KeyMirror(
-        if opts.showHidden then Object.getOwnPropertyNames obj
-        else Object.keys obj
-      )
+      if isRoot and opts.showHidden
+        keys = KeyMirror Object.getOwnPropertyNames obj
+        keys._remove "prototype", "constructor"
+      else keys = KeyMirror Object.keys obj
 
-      inheritedKeys = @_getInheritedKeys obj, opts
+      if isRoot and opts.showInherited
+        inherited = @_getInheritedValues obj
 
-      if isKind obj, Function
-        keys._add "name" if obj.name.length > 0
+      hasInheritedValues = inherited and inherited.count
 
-      else if isKind obj, Array
+      if isKind obj, Array
         keys._add "length"
 
       else if isKind obj, Error
@@ -503,7 +503,8 @@ define Logger.prototype, ->
       if isKind opts.includedKeys, Array
         keys._add opts.includedKeys
 
-      return no if keys._length is 0 and inheritedKeys.length is 0
+      if keys._length is 0
+        return no unless hasInheritedValues
 
       isTruncated = no
 
@@ -513,7 +514,7 @@ define Logger.prototype, ->
         isTruncated = yes
         keys._replace keys._keys.slice opts.keyOffset, opts.keyOffset + maxKeyCount
 
-      @indent += 2
+      @plusIndent 2
 
       if isTruncated and opts.keyOffset > 0
         @moat 0
@@ -526,19 +527,12 @@ define Logger.prototype, ->
         @moat 0
         @cyan "..."
 
-      if inheritedKeys.length > 0
+      if hasInheritedValues
         @moat 0
-        @green.dim.bold "inherited "
-        { showInherited } = opts
-        opts.showInherited = no
-        opts.depth++
-        @_logObject inheritedKeys.hash, opts
-        opts.depth--
-        opts.showInherited = showInherited
+        @_logInheritedValues inherited.values, opts
 
       @moat 0
-
-      @indent -= 2
+      @popIndent()
 
       yes
 
@@ -564,7 +558,7 @@ define Logger.prototype, ->
       if isKind collapse, Function then collapse = collapse value, key, obj
 
       # Ensure 'collapse' is a Boolean.
-      unless isType collapse, Boolean then collapse = no
+      collapse = no unless isType collapse, Boolean
 
       { keyPath } = opts
 
@@ -580,20 +574,41 @@ define Logger.prototype, ->
 
       opts.keyPath = keyPath
 
-    _getInheritedKeys: (obj, opts) ->
-        inheritedKeys = []
-        inheritedKeys.hash = {}
-        objType = getType obj
-        objProto = objType?.prototype
-        if opts.showInherited and opts.keyPath is "" and objProto isnt obj
-          loop
-            if objProto?
-              for key, value of objProto
-                inheritedKeys.push = { key, value }
-                inheritedKeys.hash[key] = value
-            objType = getKind objType
-            break if !objType?
-        inheritedKeys
+    _getInheritedValues: (obj) ->
+
+      return unless obj
+      objType = getType obj
+      return unless objType
+
+      count = 0
+      values = Object.create null
+
+      loop
+        objProto = objType.prototype
+        if objProto?
+          for key in Object.getOwnPropertyNames objProto
+            continue if key is "constructor"
+            continue if key is "__proto__"
+            continue if has values, key
+            continue if has obj, key
+            values[key] = objProto[key]
+            count += 1
+
+        objType = getKind objType
+        break unless objType
+
+      { count, values }
+
+    _logInheritedValues: (values, opts) ->
+      @green.dim.bold "inherited "
+      { showInherited, keyOffset } = opts
+      opts.showInherited = no
+      opts.keyOffset = 0
+      opts.depth++
+      @_logObject values, opts
+      opts.depth--
+      opts.keyOffset = keyOffset
+      opts.showInherited = showInherited
 
     _debugError: (error, format) ->
 
