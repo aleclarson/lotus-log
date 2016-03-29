@@ -1,89 +1,36 @@
-var NamedFunction, Style, ansi, capitalize, defaultPalettes, define, defineStyleAttributes, hooker, isNodeJS, ref, setKind, setType, stripAnsi, sync,
-  slice = [].slice;
+var Factory, NamedFunction, Shape, TextStyle, ansi, define, isNodeJS, ref, setType, sync;
 
-ref = require("type-utils"), setType = ref.setType, setKind = ref.setKind;
-
-sync = require("io").sync;
+ref = require("type-utils"), setType = ref.setType, Shape = ref.Shape;
 
 NamedFunction = require("named-function");
 
-capitalize = require("capitalize");
-
-stripAnsi = require("strip-ansi");
-
 isNodeJS = require("isNodeJS");
+
+Factory = require("factory");
 
 define = require("define");
 
-hooker = require("hooker");
-
 ansi = require("ansi-256-colors");
 
-module.exports = function(log, opts) {
-  var colors, palettes;
-  if (log.color instanceof Object) {
-    palettes = log.color.palettes;
+sync = require("sync");
+
+module.exports = function(log, options) {
+  var palettes;
+  log.isColorful = options.colorful !== false;
+  if (log.process && log.isColorful) {
+    log.isColorful = log.process.stdout.isTTY;
   }
-  if (palettes == null) {
-    palettes = module.exports.defaultPalettes;
-  }
-  colors = Object.keys(palettes.bright);
-  hooker.hook(log, "_printChunk", function(chunk) {
-    if (this.isColorful) {
-      return;
-    }
-    if (chunk.message == null) {
-      return;
-    }
-    return chunk.message = stripAnsi(chunk.message);
+  palettes = options.palettes || exports.defaultPalettes;
+  log.color = {};
+  TextStyle.defineCreators(log.color, palettes, function(messages) {
+    return messages.join("");
   });
-  define(log, function() {
-    this.options = {};
-    defineStyleAttributes(colors, function(key, value) {
-      var finalize, style;
-      finalize = function(messages) {
-        return log.apply(log, messages);
-      };
-      style = Style({
-        log: log,
-        colors: colors,
-        finalize: finalize
-      });
-      style[key] = value;
-      return style;
-    });
-    this.configurable = false;
-    return this({
-      isColorful: {
-        value: opts.colorful || true
-      },
-      color: {
-        value: {
-          palettes: palettes
-        }
-      }
-    });
+  return TextStyle.defineCreators(log, palettes, function(messages) {
+    return log._log(messages);
   });
-  define(log.color, function() {
-    this.options = {};
-    return defineStyleAttributes(colors, function(key, value) {
-      var finalize, style;
-      finalize = function(messages) {
-        return messages.join("");
-      };
-      style = Style({
-        log: log,
-        colors: colors,
-        finalize: finalize
-      });
-      style[key] = value;
-      return style;
-    });
-  });
-  return null;
 };
 
-defaultPalettes = {
+exports.defaultPalettes = {
   bright: {
     red: [4, 0, 0],
     blue: [0, 1, 5],
@@ -108,92 +55,89 @@ defaultPalettes = {
   }
 };
 
-Style = NamedFunction("Style", function(arg) {
-  var colors, finalize, log, palettes, style;
-  log = arg.log, finalize = arg.finalize, colors = arg.colors;
-  palettes = log.color.palettes;
-  style = function() {
-    var messages, palette, ref1;
-    messages = 1 <= arguments.length ? slice.call(arguments, 0) : [];
-    if (!isNodeJS || log.isQuiet || !log.isColorful) {
-      return finalize(messages);
-    }
-    palette = (ref1 = style.palette) != null ? ref1 : style.isDim ? "dim" : "bright";
-    colors = palettes[palette];
-    if (style.isBold) {
-      messages.unshift("\x1b[1m");
-      messages.push("\x1b[22m");
-    }
-    if (style.fg != null) {
-      messages.unshift(ansi.fg.getRgb.apply(null, colors[style.fg]));
-    }
-    if (style.bg != null) {
-      messages.unshift(ansi.bg.getRgb.apply(null, colors[style.bg]));
-    }
-    if ((style.fg != null) || (style.bg != null)) {
-      messages.push(ansi.reset);
-    }
-    return finalize(messages);
-  };
-  setType(style, Style);
-  return define(style, function() {
-    this.options = null;
-    this({
-      fg: null,
-      bg: null,
-      palette: null,
-      isBold: false,
-      isDim: false
-    });
-    return defineStyleAttributes(colors, function(key, value) {
-      style[key] = value;
-      return style;
-    });
-  });
-});
-
-define(function() {
-  this.options = {
-    configurable: false
-  };
-  this(module.exports, {
-    defaultPalettes: {
-      value: defaultPalettes
-    }
-  });
-  this.writable = false;
-  return this(module.exports, {
-    Style: Style
-  });
-});
-
-setKind(Style, Function);
-
-defineStyleAttributes = function(colors, setAttribute) {
-  sync.each(colors, function(color) {
-    define(color, {
-      get: function() {
-        return setAttribute("fg", color);
-      }
-    });
-    return define("bg" + capitalize(color), {
-      get: function() {
-        return setAttribute("bg", color);
-      }
-    });
-  });
-  return define({
-    dim: {
-      get: function() {
-        return setAttribute("isDim", true);
-      }
+exports.TextStyle = TextStyle = Factory("TextStyle", {
+  statics: {
+    defineCreators: function(target, palettes, print) {
+      var colors;
+      colors = Object.keys(palettes.bright);
+      return TextStyle.defineAttributes(target, colors, function(key, value) {
+        var style;
+        style = TextStyle({
+          palettes: palettes,
+          print: print
+        });
+        style[key] = value;
+        return style;
+      });
     },
-    bold: {
-      get: function() {
-        return setAttribute("isBold", true);
-      }
+    defineAttributes: function(target, colors, setAttribute) {
+      var attributes;
+      attributes = sync.reduce(colors, {}, function(attributes, key) {
+        attributes[key] = {
+          get: function() {
+            return setAttribute("fg", key);
+          }
+        };
+        return attributes;
+      });
+      attributes.dim = {
+        get: function() {
+          return setAttribute("isDim", true);
+        }
+      };
+      attributes.bold = {
+        get: function() {
+          return setAttribute("isBold", true);
+        }
+      };
+      return define(target, attributes);
     }
-  });
-};
+  },
+  kind: Function,
+  optionTypes: {
+    palettes: Shape({
+      bright: Object,
+      dim: Object
+    }),
+    print: Function
+  },
+  initValues: function(options) {
+    return {
+      palettes: options.palettes,
+      print: options.print
+    };
+  },
+  init: function() {
+    var colors;
+    colors = Object.keys(this.palettes.bright);
+    return TextStyle.defineAttributes(this, colors, (function(_this) {
+      return function(key, value) {
+        _this[key] = value;
+        return _this;
+      };
+    })(this));
+  },
+  func: function() {
+    var args, colors, i, index, len, value;
+    args = [];
+    for (index = i = 0, len = arguments.length; i < len; index = ++i) {
+      value = arguments[index];
+      args[index] = value;
+    }
+    if (!isNodeJS || log.isQuiet || !log.isColorful) {
+      return this.print(args);
+    }
+    colors = this.palettes[this.isDim ? "dim" : "bright"];
+    if (this.isBold) {
+      args.unshift("\x1b[1m");
+      args.push("\x1b[22m");
+    }
+    if (this.fg && colors[this.fg]) {
+      args.unshift(ansi.fg.getRgb.apply(null, colors[this.fg]));
+      args.push(ansi.reset);
+    }
+    return this.print(args);
+  }
+});
 
 //# sourceMappingURL=../../map/src/color.map

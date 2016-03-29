@@ -1,35 +1,35 @@
 
-noop = require "no-op"
+emptyFunction = require "emptyFunction"
+isNodeJS = require "isNodeJS"
 define = require "define"
+isDev = require "isDev"
 
 # Can be safely called with any Logger.
-module.exports = (log, opts) ->
+module.exports = (log, options) ->
 
-  verbose = noop
-  debug = noop
-  spinner = null
+  define log,
 
-  define log, ->
+    isQuiet: no
 
-    @options = configurable: no
-    @
-      isQuiet: no
+    isVerbose: didSet: (isVerbose) ->
+      @_verbose = if isVerbose then this else emptyFunction
 
-      isVerbose: didSet: (isVerbose) ->
-        verbose = if isVerbose then this else noop
+    isDebug: didSet: (isDebug) ->
+      @_debug = if isDebug then this else emptyFunction
 
-      isDebug: didSet: (isDebug) ->
-        debug = if isDebug then this else noop
+    verbose: ->
+      @_verbose.apply this, arguments
 
-    @writable = no
-    @
-      verbose: -> verbose.apply this, arguments
+    debug: ->
+      @_debug.apply this, arguments
 
-      debug: -> debug.apply this, arguments
+    _verbose: emptyFunction
 
-  log.isDebug = (opts.debug is yes) or ((global.__DEV__ is yes) and (opts.debug isnt no))
-  log.isVerbose = opts.verbose is yes
+    _debug: emptyFunction
 
-  if typeof process isnt "undefined"
+  log.isDebug = (options.debug is yes) or (isDev and (options.debug isnt no))
+  log.isVerbose = options.verbose is yes
+
+  if isNodeJS
     log.isDebug = log.isDebug or ("--debug" in process.argv) or (process.env.DEBUG is "true")
     log.isVerbose = log.isVerbose or ("--verbose" in process.argv) or (process.env.VERBOSE is "true")

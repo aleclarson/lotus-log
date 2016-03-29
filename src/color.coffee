@@ -1,53 +1,31 @@
 
 # TODO: Allow simultaneous use of foreground & background color.
 
-{ setType, setKind } = require "type-utils"
-{ sync } = require "io"
+{ setType, Shape } = require "type-utils"
 
 NamedFunction = require "named-function"
-capitalize = require "capitalize"
-stripAnsi = require "strip-ansi"
 isNodeJS = require "isNodeJS"
+Factory = require "factory"
 define = require "define"
-hooker = require "hooker"
 ansi = require "ansi-256-colors"
+sync = require "sync"
 
 # Can be safely called with any Logger.
-module.exports = (log, opts) ->
+module.exports = (log, options) ->
 
-  palettes = log.color.palettes if log.color instanceof Object
-  palettes ?= module.exports.defaultPalettes
-  colors = Object.keys palettes.bright
+  log.isColorful = options.colorful isnt no
 
-  hooker.hook log, "_printChunk", (chunk) ->
-    return if @isColorful
-    return unless chunk.message?
-    chunk.message = stripAnsi chunk.message
+  if log.process and log.isColorful
+    log.isColorful = log.process.stdout.isTTY
 
-  define log, ->
-    @options = {}
-    defineStyleAttributes colors, (key, value) ->
-      finalize = (messages) -> log.apply log, messages
-      style = Style { log, colors, finalize }
-      style[key] = value
-      style
+  palettes = options.palettes or exports.defaultPalettes
 
-    @configurable = no
-    @
-      isColorful: value: opts.colorful or yes
-      color: value: { palettes }
+  log.color = {}
+  TextStyle.defineCreators log.color, palettes, (messages) -> messages.join ""
 
-  define log.color, ->
-    @options = {}
-    defineStyleAttributes colors, (key, value) ->
-      finalize = (messages) -> messages.join ""
-      style = Style { log, colors, finalize }
-      style[key] = value
-      style
+  TextStyle.defineCreators log, palettes, (messages) -> log._log messages
 
-  null
-
-defaultPalettes =
+exports.defaultPalettes =
 
   bright:
     red: [4, 0, 0]
@@ -71,60 +49,57 @@ defaultPalettes =
     pink: [3, 0, 1]
     black: [0, 0, 0]
 
-Style = NamedFunction "Style", ({ log, finalize, colors }) ->
+exports.TextStyle =
+TextStyle = Factory "TextStyle",
 
-  palettes = log.color.palettes
+  statics:
 
-  style = (messages...) ->
+    defineCreators: (target, palettes, print) ->
+      colors = Object.keys palettes.bright
+      TextStyle.defineAttributes target, colors, (key, value) ->
+        style = TextStyle { palettes, print }
+        style[key] = value
+        style
 
-    return finalize messages if !isNodeJS or log.isQuiet or !log.isColorful
+    defineAttributes: (target, colors, setAttribute) ->
+      attributes = sync.reduce colors, {}, (attributes, key) ->
+        attributes[key] = get: -> setAttribute "fg", key
+        attributes
+      attributes.dim = get: -> setAttribute "isDim", yes
+      attributes.bold = get: -> setAttribute "isBold", yes
+      define target, attributes
 
-    palette = style.palette ? if style.isDim then "dim" else "bright"
+  kind: Function
 
-    colors = palettes[palette]
+  optionTypes:
+    palettes: Shape { bright: Object, dim: Object }
+    print: Function
 
-    if style.isBold
-      messages.unshift "\x1b[1m"
-      messages.push "\x1b[22m"
+  initValues: (options) ->
+    palettes: options.palettes
+    print: options.print
 
-    if style.fg?
-      messages.unshift ansi.fg.getRgb.apply null, colors[style.fg]
+  init: ->
+    colors = Object.keys @palettes.bright
+    TextStyle.defineAttributes this, colors, (key, value) =>
+      this[key] = value
+      this
 
-    if style.bg?
-      messages.unshift ansi.bg.getRgb.apply null, colors[style.bg]
+  func: ->
+    args = [] # Must not leak arguments object!
+    args[index] = value for value, index in arguments
 
-    if style.fg? or style.bg?
-      messages.push ansi.reset
+    if not isNodeJS or log.isQuiet or not log.isColorful
+      return @print args
 
-    finalize messages
+    colors = @palettes[if @isDim then "dim" else "bright"]
 
-  setType style, Style
+    if @isBold
+      args.unshift "\x1b[1m"
+      args.push "\x1b[22m"
 
-  define style, ->
-    @options = null
-    @
-      fg: null
-      bg: null
-      palette: null
-      isBold: no
-      isDim: no
+    if @fg and colors[@fg]
+      args.unshift ansi.fg.getRgb.apply null, colors[@fg]
+      args.push ansi.reset
 
-    defineStyleAttributes colors, (key, value) ->
-      style[key] = value
-      style
-
-define ->
-  @options = configurable: no
-  @ module.exports, defaultPalettes: value: defaultPalettes
-  @writable = no
-  @ module.exports, { Style }
-
-setKind Style, Function
-
-defineStyleAttributes = (colors, setAttribute) ->
-  sync.each colors, (color) ->
-    define color, get: -> setAttribute "fg", color
-    define "bg" + capitalize(color), get: -> setAttribute "bg", color
-  define
-    dim: get: -> setAttribute "isDim", yes
-    bold: get: -> setAttribute "isBold", yes
+    return @print args

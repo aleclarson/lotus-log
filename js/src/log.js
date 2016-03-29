@@ -1,53 +1,27 @@
-var Line, Logger, define, getLogOptions, isKind, isNodeJS, log;
+var Logger, isNodeJS, log, options;
 
 require("lotus-require");
 
-isKind = require("type-utils").isKind;
-
 isNodeJS = require("isNodeJS");
 
-define = require("define");
+options = {};
+
+options.mixins = [require("./cursor")];
+
+if (isNodeJS) {
+  options.process = process;
+} else {
+  options.print = function(message) {
+    return console.log(message);
+  };
+}
 
 Logger = require("./logger");
 
-Line = require("./line");
+module.exports = log = Logger(options);
 
-getLogOptions = function() {
-  var opts;
-  opts = {
-    mixins: [require("./stack"), require("./cursor")]
-  };
-  if (isNodeJS) {
-    opts.process = process;
-  } else {
-    opts.print = function(message) {
-      return console.log(message);
-    };
-  }
-  return opts;
-};
-
-log = module.exports = Logger(getLogOptions());
-
-log.error = log.error.bind(log);
-
-if (!isNodeJS) {
-  window.log = log;
-}
+log.Logger = Logger;
 
 require("temp-log")._ = log;
-
-define(function() {
-  this.options = {
-    configurable: false,
-    writable: false
-  };
-  this(Logger, {
-    log: log
-  });
-  return this(log, {
-    Logger: Logger
-  });
-});
 
 //# sourceMappingURL=../../map/src/log.map
