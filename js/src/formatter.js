@@ -1,4 +1,4 @@
-var Factory, KeyMirror, Nan, Null, Void, assertType, getType, isNodeJS, isType, ref, repeatString, stripAnsi;
+var Factory, KeyMirror, Nan, Null, Void, assertType, concatArgs, getType, isNodeJS, isType, ref, repeatString, stripAnsi;
 
 ref = require("type-utils"), Void = ref.Void, Null = ref.Null, Nan = ref.Nan, isType = ref.isType, getType = ref.getType, assertType = ref.assertType;
 
@@ -11,6 +11,8 @@ KeyMirror = require("keymirror");
 isNodeJS = require("isNodeJS");
 
 Factory = require("factory");
+
+concatArgs = require("./concatArgs");
 
 module.exports = Factory("Formatter", {
   kind: Function,
@@ -67,7 +69,7 @@ module.exports = Factory("Formatter", {
       }
       parts.push(this._formatObject(obj, options));
     }
-    result = this._log._concatArgs(parts);
+    result = concatArgs(parts);
     if (!options.isColorful) {
       result = stripAnsi(result);
     }
@@ -345,4 +347,4 @@ module.exports = Factory("Formatter", {
   }
 });
 
-//# sourceMappingURL=../../map/src/formatter.map
+//# sourceMappingURL=../../map/src/Formatter.map

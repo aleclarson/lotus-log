@@ -1,12 +1,10 @@
 var Logger, isNodeJS, log, options;
 
-require("lotus-require");
-
 isNodeJS = require("isNodeJS");
 
 options = {};
 
-options.mixins = [require("./cursor")];
+options.mixins = [require("./mixins/cursor")];
 
 if (isNodeJS) {
   options.process = process;
@@ -16,7 +14,7 @@ if (isNodeJS) {
   };
 }
 
-Logger = require("./logger");
+Logger = require("./Logger");
 
 module.exports = log = Logger(options);
 

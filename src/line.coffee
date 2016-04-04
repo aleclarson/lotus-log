@@ -1,15 +1,25 @@
 
-define = require "define"
-NamedFunction = require "named-function"
+{ isType } = require "type-utils"
 
-Line = module.exports = NamedFunction "Line", (options) ->
-  return new Line options unless this instanceof Line
-  if typeof options is "number"
-    @index = options
-    @contents = ""
-    @length = 0
-  else
-    @index = options.index
-    @contents = options.contents ? ""
-    @length = @contents.length
-  this
+Factory = require "factory"
+
+module.exports = Factory "Line",
+
+  initArguments: (arg) ->
+    arg = { index: arg } if isType arg, Number
+    [ arg ]
+
+  optionTypes:
+    index: Number
+    contents: String
+
+  optionDefaults:
+    contents: ""
+
+  initValues: (options) ->
+
+    index: options.index
+
+    contents: options.contents
+
+    length: options.contents.length

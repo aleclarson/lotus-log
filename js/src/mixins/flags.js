@@ -39,4 +39,4 @@ module.exports = function(log, options) {
   }
 };
 
-//# sourceMappingURL=../../map/src/flags.map
+//# sourceMappingURL=../../../map/src/mixins/flags.map

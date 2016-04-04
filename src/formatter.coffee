@@ -12,6 +12,8 @@ KeyMirror = require "keymirror"
 isNodeJS = require "isNodeJS"
 Factory = require "factory"
 
+concatArgs = require "./concatArgs"
+
 module.exports = Factory "Formatter",
 
   kind: Function
@@ -61,7 +63,7 @@ module.exports = Factory "Formatter",
       options.maxArrayKeys ?= if options.unlimited then Infinity else @maxArrayKeys
       parts.push @_formatObject obj, options
 
-    result = @_log._concatArgs parts
+    result = concatArgs parts
 
     unless options.isColorful
       result = stripAnsi result

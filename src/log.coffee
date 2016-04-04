@@ -1,12 +1,10 @@
 
-require "lotus-require"
-
 isNodeJS = require "isNodeJS"
 
 options = {}
 
 options.mixins = [
-  require "./cursor"
+  require "./mixins/cursor"
 ]
 
 if isNodeJS
@@ -30,7 +28,7 @@ else
     # messageQueue.push message
     # messageQueue.flush()
 
-Logger = require "./logger"
+Logger = require "./Logger"
 
 module.exports =
 log = Logger options

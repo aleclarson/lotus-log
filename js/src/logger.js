@@ -1,10 +1,6 @@
-var Event, Factory, Formatter, KeyMirror, Line, Logger, NamedFunction, Nan, Null, Void, assertType, childProcess, defaultNewline, has, inArray, isNodeJS, isType, mixins, ref, repeatString, stripAnsi, sync, throwFailure;
+var Event, Factory, Formatter, KeyMirror, Line, Logger, Nan, Null, Void, assertType, childProcess, concatArgs, defaultNewline, inArray, isNodeJS, isType, mixins, ref, repeatString, stripAnsi, sync;
 
 ref = require("type-utils"), Void = ref.Void, Null = ref.Null, Nan = ref.Nan, isType = ref.isType, assertType = ref.assertType;
-
-throwFailure = require("failure").throwFailure;
-
-NamedFunction = require("named-function");
 
 repeatString = require("repeat-string");
 
@@ -24,11 +20,11 @@ Event = require("event");
 
 sync = require("sync");
 
-has = require("has");
+concatArgs = require("./concatArgs");
 
-Formatter = require("./formatter");
+Formatter = require("./Formatter");
 
-Line = require("./line");
+Line = require("./Line");
 
 if (isNodeJS) {
   defaultNewline = (require("os")).EOL;
@@ -36,7 +32,7 @@ if (isNodeJS) {
   defaultNewline = "\n";
 }
 
-mixins = [require("./indent"), require("./flags"), require("./color")];
+mixins = [require("./mixins/indent"), require("./mixins/flags"), require("./mixins/color")];
 
 module.exports = Logger = Factory("Logger", {
   statics: {
@@ -206,7 +202,7 @@ module.exports = Logger = Factory("Logger", {
     if (this.isQuiet) {
       return false;
     }
-    args = this._concatArgs(args);
+    args = concatArgs(args);
     lines = args.split(this.ln);
     if (lines.length === 0) {
       return false;
@@ -290,24 +286,6 @@ module.exports = Logger = Factory("Logger", {
       });
     }
   },
-  _concatArgs: function(args) {
-    var AddableType, result;
-    result = "";
-    AddableType = [String, Number, Boolean, Nan, Null];
-    sync.each(args, (function(_this) {
-      return function(arg) {
-        if (arg === void 0) {
-          return;
-        }
-        if (Array.isArray(arg)) {
-          result += _this._concatArgs(arg);
-        } else if (isType(arg, AddableType)) {
-          result += arg;
-        }
-      };
-    })(this));
-    return result;
-  },
   _debugError: function(error, format) {
     if (format.simple === true) {
       return false;
@@ -319,4 +297,4 @@ module.exports = Logger = Factory("Logger", {
   }
 });
 
-//# sourceMappingURL=../../map/src/logger.map
+//# sourceMappingURL=../../map/src/Logger.map

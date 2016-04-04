@@ -1,7 +1,7 @@
 {
   "version": 3,
   "file": "history.js",
-  "sourceRoot": "../../src",
+  "sourceRoot": "../../../src/mixins",
   "sources": [
     "history.coffee"
   ],

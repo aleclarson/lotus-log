@@ -5,9 +5,6 @@
   isType
   assertType } = require "type-utils"
 
-{ throwFailure } = require "failure"
-
-NamedFunction = require "named-function"
 repeatString = require "repeat-string"
 childProcess = require "child_process"
 stripAnsi = require "strip-ansi"
@@ -17,18 +14,18 @@ inArray = require "in-array"
 Factory = require "factory"
 Event = require "event"
 sync = require "sync"
-has = require "has"
 
-Formatter = require "./formatter"
-Line = require "./line"
+concatArgs = require "./concatArgs"
+Formatter = require "./Formatter"
+Line = require "./Line"
 
 if isNodeJS then defaultNewline = (require "os").EOL
 else defaultNewline = "\n"
 
 mixins = [
-  require "./indent"
-  require "./flags"
-  require "./color"
+  require "./mixins/indent"
+  require "./mixins/flags"
+  require "./mixins/color"
 ]
 
 module.exports =
@@ -182,7 +179,7 @@ Logger = Factory "Logger",
 
   _log: (args) ->
     return no if @isQuiet
-    args = @_concatArgs args
+    args = concatArgs args
     lines = args.split @ln
     return no if lines.length is 0
     lastLine = lines.pop()
@@ -253,19 +250,6 @@ Logger = Factory "Logger",
     # Since line splicing is not yet supported, just move the cursor down and overwrite existing lines.
     else
       @_printToChunk @ln, silent: yes
-
-  # Transforms an array of arguments into a single string.
-  _concatArgs: (args) ->
-    result = ""
-    AddableType = [ String, Number, Boolean, Nan, Null ]
-    sync.each args, (arg) =>
-      return if arg is undefined
-      if Array.isArray arg
-        result += @_concatArgs arg
-      else if isType arg, AddableType
-        result += arg
-      return
-    return result
 
   _debugError: (error, format) ->
 

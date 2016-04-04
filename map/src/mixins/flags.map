@@ -1,7 +1,7 @@
 {
   "version": 3,
   "file": "flags.js",
-  "sourceRoot": "../../src",
+  "sourceRoot": "../../../src/mixins",
   "sources": [
     "flags.coffee"
   ],

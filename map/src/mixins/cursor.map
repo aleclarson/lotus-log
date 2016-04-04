@@ -1,7 +1,7 @@
 {
   "version": 3,
   "file": "cursor.js",
-  "sourceRoot": "../../src",
+  "sourceRoot": "../../../src/mixins",
   "sources": [
     "cursor.coffee"
   ],

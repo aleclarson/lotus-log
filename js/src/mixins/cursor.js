@@ -145,4 +145,4 @@ exports.Cursor = Cursor = Factory("Cursor", {
   }
 });
 
-//# sourceMappingURL=../../map/src/cursor.map
+//# sourceMappingURL=../../../map/src/mixins/cursor.map

@@ -1,24 +1,32 @@
-var Line, NamedFunction, define;
+var Factory, isType;
 
-define = require("define");
+isType = require("type-utils").isType;
 
-NamedFunction = require("named-function");
+Factory = require("factory");
 
-Line = module.exports = NamedFunction("Line", function(options) {
-  var ref;
-  if (!(this instanceof Line)) {
-    return new Line(options);
+module.exports = Factory("Line", {
+  initArguments: function(arg) {
+    if (isType(arg, Number)) {
+      arg = {
+        index: arg
+      };
+    }
+    return [arg];
+  },
+  optionTypes: {
+    index: Number,
+    contents: String
+  },
+  optionDefaults: {
+    contents: ""
+  },
+  initValues: function(options) {
+    return {
+      index: options.index,
+      contents: options.contents,
+      length: options.contents.length
+    };
   }
-  if (typeof options === "number") {
-    this.index = options;
-    this.contents = "";
-    this.length = 0;
-  } else {
-    this.index = options.index;
-    this.contents = (ref = options.contents) != null ? ref : "";
-    this.length = this.contents.length;
-  }
-  return this;
 });
 
-//# sourceMappingURL=../../map/src/line.map
+//# sourceMappingURL=../../map/src/Line.map
