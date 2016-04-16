@@ -1,4 +1,6 @@
 
+require "isNodeJS"
+
 { Void
   Null
   Nan
@@ -9,7 +11,6 @@ repeatString = require "repeat-string"
 childProcess = require "child_process"
 stripAnsi = require "strip-ansi"
 KeyMirror = require "keymirror"
-isNodeJS = require "isNodeJS"
 inArray = require "in-array"
 Factory = require "factory"
 Event = require "event"

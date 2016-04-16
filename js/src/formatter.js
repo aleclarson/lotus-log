@@ -1,4 +1,6 @@
-var Factory, KeyMirror, Nan, Null, Void, assertType, concatArgs, getType, isNodeJS, isType, ref, repeatString, stripAnsi;
+var Factory, KeyMirror, Nan, Null, Void, assertType, concatArgs, getType, isType, ref, repeatString, stripAnsi;
+
+require("isNodeJS");
 
 ref = require("type-utils"), Void = ref.Void, Null = ref.Null, Nan = ref.Nan, isType = ref.isType, getType = ref.getType, assertType = ref.assertType;
 
@@ -7,8 +9,6 @@ repeatString = require("repeat-string");
 stripAnsi = require("strip-ansi");
 
 KeyMirror = require("keymirror");
-
-isNodeJS = require("isNodeJS");
 
 Factory = require("factory");
 
@@ -347,4 +347,4 @@ module.exports = Factory("Formatter", {
   }
 });
 
-//# sourceMappingURL=../../map/src/Formatter.map
+//# sourceMappingURL=../../map/src/formatter.map

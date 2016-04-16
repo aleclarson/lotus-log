@@ -1,6 +1,6 @@
-var Logger, isNodeJS, log, options;
+var Logger, log, options;
 
-isNodeJS = require("isNodeJS");
+require("isNodeJS");
 
 options = {};
 

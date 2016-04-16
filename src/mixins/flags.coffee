@@ -1,8 +1,9 @@
 
+require "isNodeJS"
+require "isDev"
+
 emptyFunction = require "emptyFunction"
-isNodeJS = require "isNodeJS"
 define = require "define"
-isDev = require "isDev"
 
 # Can be safely called with any Logger.
 module.exports = (log, options) ->

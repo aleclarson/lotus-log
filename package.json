@@ -1,6 +1,5 @@
 {
   "name": "lotus-log",
-  "description": "Terminal utilities for local JavaScript development.",
   "version": "1.0.0",
   "main": "./js/src/log",
   "dependencies": {
@@ -10,9 +9,9 @@
     "factory": "aleclarson/factory#1.0.0",
     "hook": "aleclarson/hook#1.0.0",
     "in-array": "^0.1.0",
+    "isDev": "aleclarson/isDev#1.0.0",
     "isNodeJS": "aleclarson/isNodeJS#1.0.0",
     "keymirror": "aleclarson/keymirror#1.0.0",
-    "named-function": "aleclarson/named-function#1.0.3",
     "repeat-string": "^1.5.2",
     "strip-ansi": "^2.0.1",
     "sync": "aleclarson/sync#1.0.0",

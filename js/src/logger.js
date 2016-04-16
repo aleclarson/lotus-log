@@ -1,4 +1,6 @@
-var Event, Factory, Formatter, KeyMirror, Line, Logger, Nan, Null, Void, assertType, childProcess, concatArgs, defaultNewline, inArray, isNodeJS, isType, mixins, ref, repeatString, stripAnsi, sync;
+var Event, Factory, Formatter, KeyMirror, Line, Logger, Nan, Null, Void, assertType, childProcess, concatArgs, defaultNewline, inArray, isType, mixins, ref, repeatString, stripAnsi, sync;
+
+require("isNodeJS");
 
 ref = require("type-utils"), Void = ref.Void, Null = ref.Null, Nan = ref.Nan, isType = ref.isType, assertType = ref.assertType;
 
@@ -9,8 +11,6 @@ childProcess = require("child_process");
 stripAnsi = require("strip-ansi");
 
 KeyMirror = require("keymirror");
-
-isNodeJS = require("isNodeJS");
 
 inArray = require("in-array");
 
@@ -297,4 +297,4 @@ module.exports = Logger = Factory("Logger", {
   }
 });
 
-//# sourceMappingURL=../../map/src/Logger.map
+//# sourceMappingURL=../../map/src/logger.map

@@ -29,4 +29,4 @@ module.exports = Factory("Line", {
   }
 });
 
-//# sourceMappingURL=../../map/src/Line.map
+//# sourceMappingURL=../../map/src/line.map

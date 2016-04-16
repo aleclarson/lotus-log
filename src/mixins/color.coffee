@@ -1,7 +1,8 @@
 
+require "isNodeJS"
+
 { isType, setType, Shape } = require "type-utils"
 
-isNodeJS = require "isNodeJS"
 LazyVar = require "lazy-var"
 combine = require "combine"
 

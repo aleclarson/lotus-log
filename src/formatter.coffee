@@ -1,4 +1,6 @@
 
+require "isNodeJS"
+
 { Void
   Null
   Nan
@@ -9,7 +11,6 @@
 repeatString = require "repeat-string"
 stripAnsi = require "strip-ansi"
 KeyMirror = require "keymirror"
-isNodeJS = require "isNodeJS"
 Factory = require "factory"
 
 concatArgs = require "./concatArgs"

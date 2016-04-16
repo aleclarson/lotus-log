@@ -6,7 +6,7 @@
 # { dirname } = require "path"
 # { sync, async } = require "io"
 # { isType, isKind } = require "type-utils"
-# NamedFunction = require "named-function"
+# NamedFunction = require "NamedFunction"
 #
 # # Can be safely called with any Logger.
 # module.exports = (log) -> define ->

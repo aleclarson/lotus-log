@@ -1,8 +1,8 @@
-var LazyVar, Shape, TextStyle, combine, defaultPalette, isNodeJS, isType, ref, setType;
+var LazyVar, Shape, TextStyle, combine, defaultPalette, isType, ref, setType;
+
+require("isNodeJS");
 
 ref = require("type-utils"), isType = ref.isType, setType = ref.setType, Shape = ref.Shape;
-
-isNodeJS = require("isNodeJS");
 
 LazyVar = require("lazy-var");
 

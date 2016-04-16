@@ -1,5 +1,5 @@
 
-isNodeJS = require "isNodeJS"
+require "isNodeJS"
 
 options = {}
 

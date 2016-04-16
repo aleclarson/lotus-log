@@ -1,13 +1,13 @@
-var define, emptyFunction, isDev, isNodeJS,
+var define, emptyFunction,
   indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
+
+require("isNodeJS");
+
+require("isDev");
 
 emptyFunction = require("emptyFunction");
 
-isNodeJS = require("isNodeJS");
-
 define = require("define");
-
-isDev = require("isDev");
 
 module.exports = function(log, options) {
   define(log, {
