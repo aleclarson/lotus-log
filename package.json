@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "./js/src/log",
   "dependencies": {
-    "ansi-256-colors": "jbnicolai/ansi-256-colors",
+    "ansi-256-colors": "aleclarson/ansi-256-colors",
     "define": "aleclarson/define#1.0.0",
     "event": "aleclarson/event#1.0.0",
     "exit": "aleclarson/exit#1.0.0",
