@@ -1,0 +1,10 @@
+{
+  "version": 3,
+  "file": "history.js",
+  "sourceRoot": "../../../src/mixins",
+  "sources": [
+    "history.coffee"
+  ],
+  "names": [],
+  "mappings": ""
+}
